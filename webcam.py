@@ -1,7 +1,7 @@
 import cv2
 import mediapipe as mp
 
-# appliquer le classifieur opencv pour les images avec un visage à face frontal
+#classifieur opencv pour les images avec un visage à face frontal
 face_classifier = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 )
@@ -9,11 +9,9 @@ face_classifier = cv2.CascadeClassifier(
 # Initialise le module pour la reconnaissance des mains
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands()
-
-# Initialize MediaPipe Drawing module for drawing landmarks
 mp_drawing = mp.solutions.drawing_utils
 
-# Capture vidéo à partir de la webcam (0 correspond à la caméra par défaut)
+# Capture vidéo à partir de la webcam 
 cap = cv2.VideoCapture(0)
 
 # Détecte les visages dans le flux vidéo et dessine une boîte de délimitation autour
@@ -24,15 +22,12 @@ def detect_bounding_box_face(vid):
         cv2.rectangle(vid, (x, y), (x + w, y + h), (0, 255, 0), 4)
     return faces
 
+# Détecte les mains dans le flux vidéo et dessine le squelette correspondant
 def detect_bounding_box_hands(vid):
-    # Convert BGR to RGB
     rgb_frame = cv2.cvtColor(vid, cv2.COLOR_BGR2RGB)
-    
-    # Process the frame to detect hands
-    results = hands.process(rgb_frame)    # Check if hands are detected
+    results = hands.process(rgb_frame)    
     if results.multi_hand_landmarks:
         for hand_landmarks in results.multi_hand_landmarks:
-            # Draw landmarks on the frame with red color
             mp_drawing.draw_landmarks(
                 vid, hand_landmarks, mp_hands.HAND_CONNECTIONS,
                 landmark_drawing_spec=mp_drawing.DrawingSpec(color=(255, 0, 0), thickness=2, circle_radius=2),
@@ -45,7 +40,7 @@ while True:
     # Capture une image
     result, video_frame = cap.read()  
     if not result:
-        break  # terminate the loop if the frame is not read successfully
+        break  
 
     faces = detect_bounding_box_face(video_frame)
     hand_landmarks = detect_bounding_box_hands(video_frame)
