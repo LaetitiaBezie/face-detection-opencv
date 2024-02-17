@@ -37,9 +37,11 @@ def main(image1_path, image2_path, output_path):
     result = cv2.warpPerspective(image1, homography, (image2.shape[1], image2.shape[0]))
 
     # Fusionne les deux images alignées
+    # Mélange alpha
     alpha = 0.5  # blending factor
     blended_image = cv2.addWeighted(result, alpha, image2, 1 - alpha, 0)
-    
+
+
     # Enregistre l'image fusionnée
     cv2.imwrite(output_path, blended_image)
     print(f"Image fusionnée enregistrée sous: {output_path}")
