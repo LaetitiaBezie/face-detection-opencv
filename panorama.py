@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 import sys
 import time
-
 def main(image1_path, image2_path, output_path):
     # Enregistre le temps de début de l'exécution
     start_time = time.time()  
@@ -21,35 +20,59 @@ def main(image1_path, image2_path, output_path):
     keypoints1, descriptors1 = sift.detectAndCompute(gray1, None)
     keypoints2, descriptors2 = sift.detectAndCompute(gray2, None)
 
+    # Effectue le matching des descripteurs avec brute force
+    #bf = cv2.BFMatcher(cv2.NORM_L2, crossCheck=True)
+    #matches = bf.match(descriptors1, descriptors2)
+
+    # Sélectionne les 50 premiers appariements
+    #num_matches = 50
+    #matches = sorted(matches, key=lambda x: x.distance)[:num_matches]
+#ou
     # Initialise le matcheur des descripteurs avec FLANN
     index_params = dict(algorithm=0, trees=5)
     search_params = dict(checks=50)
     flann = cv2.FlannBasedMatcher(index_params, search_params)
 
     # Effectue le matching des descripteurs avec FLANN
-    matches_flann = flann.match(descriptors1, descriptors2)
+    matches = flann.match(descriptors1, descriptors2)
 
     # Trie les appariements par distance croissante (plus distance petit mieux c'est)
-    matches_flann = sorted(matches_flann, key=lambda x: x.distance)
-    
-    # Sélectionne les 50 premiers appariements
-    #num_matches = 50
-    #matches = cv2.drawMatches(image1, keypoints1, image2, keypoints2, matches_flann[:num_matches], None)
-    
+    matches = sorted(matches, key=lambda x: x.distance)
+   
     # Extrait les coordonnées des points correspondants
-    src_points = np.float32([keypoints1[match.queryIdx].pt for match in matches_flann]).reshape(-1, 1, 2)
-    dst_points = np.float32([keypoints2[match.trainIdx].pt for match in matches_flann]).reshape(-1, 1, 2)
+    src_points = np.float32([keypoints1[match.queryIdx].pt for match in matches]).reshape(-1, 1, 2)
+    dst_points = np.float32([keypoints2[match.trainIdx].pt for match in matches]).reshape(-1, 1, 2)
 
     # Estime la matrice d'homographie
-    homography, _ = cv2.findHomography(src_points, dst_points, cv2.RANSAC, 5.0)
+    homography, _ = cv2.findHomography(src_points, dst_points, cv2.RANSAC, 1.0)
 
     # Applique l'homographie pour aligner les images
     result = cv2.warpPerspective(image1, homography, (image2.shape[1], image2.shape[0]))
 
     # Fusionne les deux images alignées
-    alpha = 0.3  # blending factor
+    # Mélange alpha
+    alpha = 0.5  # blending facteur: contribution de chaque image dans l'image finale
     blended_image = cv2.addWeighted(result, alpha, image2, 1 - alpha, 0)
+    # la fusion par effet de fondu
+    #blended_image = cv2.add(result, image2)   
+
+    # la pyramide gaussienne
+    # Construit les pyramides gaussiennes pour les deux images
+    # gaussian_pyramid1 = cv2.pyrDown(image1)
+    # gaussian_pyramid2 = cv2.pyrDown(image2)
+    # Fusionne les images à partir des pyramides
+    # blended_image = cv2.addWeighted(gaussian_pyramid1, alpha, gaussian_pyramid2, 1 - alpha, 0)
     
+    #Moyenne pondéré
+    #blended_image = cv2.addWeighted(result, 0.5, image2, 0.5, 0)
+
+    # Mélange multi-bandes
+    # Divise les images en différentes bandes
+    #bands1 = cv2.pyrDown(image1)
+    #bands2 = cv2.pyrDown(image2)
+    # Fusionne chaque bande
+    #blended_image = cv2.pyrUp(cv2.addWeighted(bands1, alpha, bands2, 1-alpha, 0))
+
     # Temps écoulé
     end_time = time.time()
     execution_time = end_time - start_time
